@@ -9,6 +9,8 @@ RUN pip install -r /home/app/requirements.txt
 
 COPY app app/
 COPY static static/
+COPY tests tests/
+COPY pytest.ini .
 
 EXPOSE 8000
 

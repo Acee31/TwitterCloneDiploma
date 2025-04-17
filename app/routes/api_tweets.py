@@ -30,6 +30,7 @@ tweets_routes = APIRouter(prefix="/api/tweets", tags=["Operation with tweets"])
     description="Endpoint for getting all tweets",
 )
 async def list_all_tweets(
+    api_key: Annotated[str, Header(description="User API key")],
     session: AsyncSession = Depends(db_session.get_session),
 ) -> Dict[str, Any]:
     tweets = await get_all_tweets(session)
@@ -124,6 +125,7 @@ async def create_tweet_route(
     "/{id}",
     response_model=ResponseSchema,
     responses={
+        403: {"model": ErrorOut},
         404: {"model": ErrorOut},
         500: {"model": ErrorOut},
     },
