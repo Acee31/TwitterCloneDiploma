@@ -1,21 +1,22 @@
+"""This module contains API-functions for tweet and like."""
+
 from typing import Annotated, Any, Dict
 
 from fastapi import APIRouter, Depends, Header, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .crud.crud_tweets import (
+from app.db.db_settings import db_session
+from app.db.schemas.error_schemas import ErrorOut
+from app.db.schemas.tweet_schemas import TweetCreate, TweetCreateSchema, TweetOut
+from app.db.schemas.user_schemas import ResponseSchema
+from app.routes.crud.crud_tweets import (
     add_like_to_tweet,
     create_tweet,
     delete_like_from_tweet,
     delete_tweet_db,
     get_all_tweets,
 )
-from app.db.db_settings import db_session
-from app.db.schemas.error_schemas import ErrorOut
-from app.db.schemas.tweet_schemas import TweetCreate, TweetCreateSchema, TweetOut
-from app.db.schemas.user_schemas import ResponseSchema
-from .crud.crud_users import get_user
-
+from app.routes.crud.crud_users import get_user
 
 tweets_routes = APIRouter(prefix="/api/tweets", tags=["Operation with tweets"])
 
@@ -24,6 +25,7 @@ tweets_routes = APIRouter(prefix="/api/tweets", tags=["Operation with tweets"])
     "",
     response_model=TweetOut,
     responses={
+        404: {"model": ErrorOut},
         500: {"model": ErrorOut},
     },
     summary="Get all tweets",
@@ -31,8 +33,10 @@ tweets_routes = APIRouter(prefix="/api/tweets", tags=["Operation with tweets"])
 )
 async def list_all_tweets(
     api_key: Annotated[str, Header(description="User API key")],
-    session: AsyncSession = Depends(db_session.get_session),
+    session: Annotated[AsyncSession, Depends(db_session.get_session)],
 ) -> Dict[str, Any]:
+    """Get all tweets."""
+    await get_user(session=session, api_key_or_id=api_key)
     tweets = await get_all_tweets(session)
 
     result = []
@@ -44,14 +48,14 @@ async def list_all_tweets(
                 "attachments": [image.path for image in tweet.images],
                 "author": {"id": tweet.user.id, "name": tweet.user.name},
                 "likes": [{"user_id": like.user_id} for like in tweet.likes],
-            }
+            },
         )
 
     return {"result": True, "tweets": result}
 
 
 @tweets_routes.post(
-    "/{id}/likes",
+    "/{tweet_id}/likes",
     response_model=ResponseSchema,
     responses={
         400: {"model": ErrorOut},
@@ -63,18 +67,23 @@ async def list_all_tweets(
 )
 async def like_tweet(
     api_key: Annotated[str, Header(description="User API key")],
-    id: int = Path(..., description="Tweet ID"),
-    session: AsyncSession = Depends(db_session.get_session),
+    tweet_id: Annotated[int, Path(..., description="Tweet ID")],
+    session: Annotated[AsyncSession, Depends(db_session.get_session)],
 ) -> Dict[str, bool]:
+    """Add a like to a tweet."""
     user = await get_user(session=session, api_key_or_id=api_key)
 
-    result = await add_like_to_tweet(session=session, user_id=user.id, tweet_id=id)
+    result = await add_like_to_tweet(
+        session=session,
+        user_id=user.id,
+        tweet_id=tweet_id,
+    )
 
     return {"result": result}
 
 
 @tweets_routes.delete(
-    "/{id}/likes",
+    "/{tweet_id}/likes",
     response_model=ResponseSchema,
     responses={
         404: {"model": ErrorOut},
@@ -85,12 +94,17 @@ async def like_tweet(
 )
 async def delete_like(
     api_key: Annotated[str, Header(description="User API key")],
-    id: int = Path(..., description="Tweet ID"),
-    session: AsyncSession = Depends(db_session.get_session),
+    tweet_id: Annotated[int, Path(..., description="Tweet ID")],
+    session: Annotated[AsyncSession, Depends(db_session.get_session)],
 ) -> Dict[str, bool]:
+    """Remove a like from a tweet."""
     user = await get_user(session=session, api_key_or_id=api_key)
 
-    result = await delete_like_from_tweet(session=session, user_id=user.id, tweet_id=id)
+    result = await delete_like_from_tweet(
+        session=session,
+        user_id=user.id,
+        tweet_id=tweet_id,
+    )
 
     return {"result": result}
 
@@ -108,8 +122,9 @@ async def delete_like(
 async def create_tweet_route(
     body: TweetCreate,
     api_key: Annotated[str, Header(description="User API key")],
-    session: AsyncSession = Depends(db_session.get_session),
+    session: Annotated[AsyncSession, Depends(db_session.get_session)],
 ) -> Dict[str, Any]:
+    """Create a tweet."""
     user = await get_user(session=session, api_key_or_id=api_key)
 
     result, tweet_id = await create_tweet(
@@ -122,7 +137,7 @@ async def create_tweet_route(
 
 
 @tweets_routes.delete(
-    "/{id}",
+    "/{tweet_id}",
     response_model=ResponseSchema,
     responses={
         403: {"model": ErrorOut},
@@ -134,11 +149,16 @@ async def create_tweet_route(
 )
 async def delete_tweet(
     api_key: Annotated[str, Header(description="User API key")],
-    id: int = Path(..., description="Tweet ID"),
-    session: AsyncSession = Depends(db_session.get_session),
+    tweet_id: Annotated[int, Path(..., description="Tweet ID")],
+    session: Annotated[AsyncSession, Depends(db_session.get_session)],
 ) -> Dict[str, bool]:
+    """Delete a tweet."""
     user = await get_user(session=session, api_key_or_id=api_key)
 
-    result = await delete_tweet_db(session=session, tweet_id=id, user_id=user.id)
+    result = await delete_tweet_db(
+        session=session,
+        tweet_id=tweet_id,
+        user_id=user.id,
+    )
 
     return {"result": result}

@@ -1,12 +1,11 @@
 [flake8]
-max-line-length = 90
-extend-ignore = E501, E203, W503, B008
 per-file-ignores =
-    settings*.py:E402,F403,F405
-exclude =
-    .git,
-    __pycache__,
-    .tox,
-    .eggs,
-    *.egg,
-    .venv
+    **/__init__.py: D104
+ignore =
+    Q000, WPS110, WPS226, WPS204, S101, DAR101, DAR301, WPS430, WPS442, WPS305, D107,
+    DAR401, WPS237, WPS229, DAR201, WPS348, WPS232, WPS231, WPS318, E122, WPS221
+max-line-length = 110
+max-asserts = 12
+max-awaits = 6
+max-raises = 5
+max-local-variables = 6

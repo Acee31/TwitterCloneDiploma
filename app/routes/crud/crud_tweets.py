@@ -1,4 +1,6 @@
-from typing import List, Sequence, Tuple
+"""This module contains CRUD-function for tweet and like."""
+
+from typing import List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -17,12 +19,11 @@ from app.db.models import Image, Like, Tweet, User
 
 async def get_all_tweets(session: AsyncSession) -> Sequence[Tweet]:
     """
-    Query the database to get all tweets
+    Query the database to get all tweets.
 
     :param session: The database session used for the query
     :return: A list of 'Tweet' objects
     """
-
     try:
         query = select(Tweet).options(
             joinedload(Tweet.user).load_only(User.id, User.name),
@@ -44,14 +45,13 @@ async def get_all_tweets(session: AsyncSession) -> Sequence[Tweet]:
 
 async def add_like_to_tweet(session: AsyncSession, tweet_id: int, user_id: int) -> bool:
     """
-    Adds a like to a user's tweet
+    Add a like to a user's tweet.
 
     :param session: The database session used for the query
     :param tweet_id: The ID of the tweet to which the like will be added
     :param user_id: The ID of the user who is adding the like
     :return: Bool
     """
-
     try:
         tweet = await session.get(Tweet, tweet_id)
         if not tweet:
@@ -93,17 +93,18 @@ async def add_like_to_tweet(session: AsyncSession, tweet_id: int, user_id: int) 
 
 
 async def delete_like_from_tweet(
-    session: AsyncSession, tweet_id: int, user_id: int
+    session: AsyncSession,
+    tweet_id: int,
+    user_id: int,
 ) -> bool:
     """
-    Deletes a like from a tweet
+    Delete a like from a tweet.
 
     :param session: The database session used for the query
     :param tweet_id: The ID of the tweet from which the like will be removed
     :param user_id: The ID of the user who is removing the like
     :return: Bool
     """
-
     try:
         tweet = await session.get(Tweet, tweet_id)
         if not tweet:
@@ -145,10 +146,13 @@ async def delete_like_from_tweet(
 
 
 async def create_tweet(
-    session: AsyncSession, user_id: int, tweet_text: str, image_ids: List[int] = None
+    session: AsyncSession,
+    user_id: int,
+    tweet_text: str,
+    image_ids: Optional[List[int]] = None,
 ) -> Tuple[bool, int]:
     """
-    Creates a tweet and optionally associates images with it
+    Create a tweet and optionally associates images with it.
 
     :param session: The database session used for the query
     :param user_id: The ID of the user who created the tweet
@@ -156,7 +160,6 @@ async def create_tweet(
     :param image_ids: A list of image IDs to associate with the tweet (optional)
     :return: Tuple (bool, int). The tuple returns a bool and the tweet ID on a successful request
     """
-
     try:
         tweet = Tweet(tweet_text=tweet_text, user_id=user_id)
         session.add(tweet)
@@ -170,7 +173,7 @@ async def create_tweet(
                 image.tweet_id = tweet.id
 
         await session.commit()
-        return True, tweet.id
+        return True, int(tweet.id)
 
     except SQLAlchemyError:
         raise HTTPException(
@@ -185,14 +188,13 @@ async def create_tweet(
 
 async def delete_tweet_db(session: AsyncSession, tweet_id, user_id: int) -> bool:
     """
-    Deletes a tweet from the database
+    Delete a tweet from the database.
 
     :param session: The database session used for the query
     :param tweet_id: The ID of the tweet to be deleted
     :param user_id: The ID of the user who is trying to delete the tweet
     :return: Bool
     """
-
     try:
         query = select(Tweet).where(Tweet.id == tweet_id)
         result = await session.execute(query)
@@ -204,7 +206,7 @@ async def delete_tweet_db(session: AsyncSession, tweet_id, user_id: int) -> bool
                 detail={
                     "result": False,
                     "error_type": HTTP_404_NOT_FOUND,
-                    "error_message": "Not found",
+                    "error_message": f"Not found tweet with id {tweet_id}",
                 },
             )
 

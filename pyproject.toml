@@ -1,0 +1,6 @@
+[tool.isort]
+profile = "black"
+skip = "**/__init__.py"
+
+[tool.mypy]
+disable_error_code = ["arg-type", "attr-defined", "call-overload"]

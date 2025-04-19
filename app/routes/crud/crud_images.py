@@ -1,3 +1,5 @@
+"""This module contains CRUD-function for upload image into database."""
+
 import os
 import uuid
 from typing import Tuple
@@ -9,13 +11,14 @@ from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.db.models import Image
 
-
 IMAGE_UPLOAD_DIR = "/home/static/images"
 
 
 async def upload_image(session: AsyncSession, file: UploadFile) -> Tuple[bool, int]:
     """
-    Uploads an image file to the server, saves it in the specified directory,
+    Upload an image file to the server.
+
+    Saves it in the specified directory,
     and stores the image's path in the database.
 
     :param session: The database session used for the query
@@ -28,15 +31,15 @@ async def upload_image(session: AsyncSession, file: UploadFile) -> Tuple[bool, i
 
         os.makedirs(IMAGE_UPLOAD_DIR, exist_ok=True)
 
-        with open(file_path, "wb") as f:
+        with open(file_path, "wb") as fil:
             content = await file.read()
-            f.write(content)
+            fil.write(content)
 
         public_path = f"images/{filename}"
         image = Image(path=public_path)
         session.add(image)
         await session.commit()
-        return True, image.id
+        return True, int(image.id)
     except SQLAlchemyError:
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
